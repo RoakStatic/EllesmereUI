@@ -381,11 +381,74 @@ local function TileUnitFrames(parent, y, W, tile)
             UFReload()
         end }
     if EllesmereUI.BlizzStyle.Active("unitframes") == "blizzard" then EllesmereUI.BlizzStyle.Gate("unitframes", castTexCfg) end
+    -- Textured Background: cogs on the bar texture dropdowns, as on the module pages.
+    local function TexBgCog(rgn, u)
+        if EllesmereUI._prebuilding then return end
+        local function Tex()
+            local ut, p = unitTable(u), db()
+            return ut, (ut and ut.healthBarTexture) or (p and p.healthBarTexture) or "none"
+        end
+        EllesmereUI.BuildInlineCog(rgn, {
+            title = "Texture Settings",
+            rows = {
+                { type = "toggle", label = "Textured Background",
+                  tooltip = "Draws the bar texture on the health and power backgrounds too, tinted by the background color. Power stays flat while its Fill Opacity is below 100.",
+                  disabled = function()
+                      local ut, tex = Tex()
+                      return not ut or tex == "none" or not ns.UF_HealthOpaque(ut)
+                  end,
+                  disabledTooltip = function()
+                      local _, tex = Tex()
+                      if tex == "none" then return "This option requires a Bar Texture other than None." end
+                      local p = db()
+                      if p and p.darkTheme then return "This option requires a Dark Mode Fill of 100 (Global Settings > Colors)." end
+                      return "This option requires a health Fill Opacity of 100."
+                  end,
+                  rawTooltip = true,
+                  get = function() local ut = unitTable(u); return (ut and ut.textureBg) == true end,
+                  set = function(v)
+                      local ut = unitTable(u); if not ut then return end
+                      ut.textureBg = v and true or false
+                      UFReload()
+                  end },
+            },
+        })
+    end
+    local function CastTexBgCog(rgn)
+        if EllesmereUI._prebuilding then return end
+        local blizzOn = EllesmereUI.BlizzStyle.Active("unitframes") == "blizzard"
+        EllesmereUI.BuildInlineCog(rgn, {
+            disabled = blizzOn and function() return true end or nil,
+            disabledTooltip = blizzOn and EllesmereUI.BlizzStyle.Label("unitframes") or nil,
+            requireState = blizzOn and "disabled" or nil,
+            title = "Texture Settings",
+            rows = {
+                { type = "toggle", label = "Textured Background",
+                  tooltip = "Draws the bar texture on the cast bar backgrounds too, tinted by the background color. A cast bar stays flat while its Fill Opacity is below 100.",
+                  disabled = function() local p = db(); return (p and p.castBarTexture) == "blizzard" end,
+                  disabledTooltip = "This option requires a Cast Bar Texture other than Blizzard.",
+                  rawTooltip = true,
+                  get = function() local p = db(); return (p and p.castTextureBg) == true end,
+                  set = function(v)
+                      local p = db(); if not p then return end
+                      p.castTextureBg = v and true or false
+                      UFReload()
+                  end },
+            },
+        })
+    end
     local _, h = W:DualRow(parent, y, barTexCfg("player"), barTexCfg("target"));  y = y - h
+    local ptRow = _  -- the row DualRow just returned
+    TexBgCog(ptRow._leftRegion, "player")
+    TexBgCog(ptRow._rightRegion, "target")
     _, h = W:DualRow(parent, y, barTexCfg("focus"), absorbCfg("player"));  y = y - h
+    local focusRow = _  -- the row DualRow just returned
+    TexBgCog(focusRow._leftRegion, "focus")
     _, h = W:DualRow(parent, y, absorbCfg("target"), absorbCfg("focus"));  y = y - h
     _, h = W:DualRow(parent, y, healAbsorbCfg("player"), healAbsorbCfg("target"));  y = y - h
     _, h = W:DualRow(parent, y, healAbsorbCfg("focus"), castTexCfg);  y = y - h
+    local castRow = _  -- the row DualRow just returned
+    CastTexBgCog(castRow._rightRegion)
     y = LinkRow(parent, y, "Pet, Target-of-Target & Boss Bar Textures",
         tile.folder, "Mini Frames", "DISPLAY", "Bar Texture")
     y = LinkRow(parent, y, "Frame, Power & Aura Border Styles",

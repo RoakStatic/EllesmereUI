@@ -317,6 +317,31 @@ function ns.UFO_BuildDisplaySection(parent, y, ctx)
                 onApply       = function(checkedKeys) ApplyTexTo(checkedKeys) end,
             },
         })
+        -- Textured Background cog (same region, after the sync icon).
+        local function TexBgUnit()
+            local s = UNIT_DB_MAP[optState.selectedUnit]()
+            return s, (s and s.healthBarTexture) or db.profile.healthBarTexture or "none"
+        end
+        EllesmereUI.BuildInlineCog(rgn, {
+            title = "Texture Settings",
+            rows = {
+                { type="toggle", label="Textured Background",
+                  tooltip="Draws the bar texture on the health and power backgrounds too, tinted by the background color. Power stays flat while its Fill Opacity is below 100.",
+                  disabled=function()
+                      local s, tex = TexBgUnit()
+                      return tex == "none" or not ns.UF_HealthOpaque(s)
+                  end,
+                  disabledTooltip=function()
+                      local _, tex = TexBgUnit()
+                      if tex == "none" then return "This option requires a Bar Texture other than None." end
+                      if db.profile.darkTheme then return "This option requires a Dark Mode Fill of 100 (Global Settings > Colors)." end
+                      return "This option requires a health Fill Opacity of 100."
+                  end,
+                  rawTooltip=true,
+                  get=function() return SVal("textureBg", false) == true end,
+                  set=function(v) SSet("textureBg", v and true or false); UpdatePreview() end },
+            },
+        })
     end
 
     -- Row 3: Border Style (+ cog) | Border (slider + double inline swatches)

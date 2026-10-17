@@ -124,6 +124,40 @@ local function BuildMiniTextAndSize(W, parent, y, settingsTable, unitKey, enable
                   ReloadAndUpdate()
               end },
             rightSlot);  y = y - h
+        -- Textured Background cog: while Bar Texture is Inherit the toggle
+        -- follows the donor frame and shows its value, greyed.
+        if not EllesmereUI._prebuilding then
+            local function Inheriting()
+                local v = settingsTable.healthBarTexture
+                return v == nil or v == "inherit"
+            end
+            EllesmereUI.BuildInlineCog(barTexRow._leftRegion, {
+                title = "Texture Settings",
+                rows = {
+                    { type="toggle", label="Textured Background",
+                      tooltip="Draws the bar texture on the health and power backgrounds too, tinted by the background color. A power bar stays flat while its opacity is below 100.",
+                      disabled=function()
+                          if Inheriting() then return true end
+                          return settingsTable.healthBarTexture == "none" or not ns.UF_HealthOpaque(settingsTable)
+                      end,
+                      disabledTooltip=function()
+                          if Inheriting() then return "This option requires a Bar Texture other than Inherit (Main Frames)." end
+                          if settingsTable.healthBarTexture == "none" then return "This option requires a Bar Texture other than None." end
+                          if db.profile.darkTheme then return "This option requires a Dark Mode Fill of 100 (Global Settings > Colors)." end
+                          return isBoss and "This option requires a health Fill Color of 100." or "This option requires a Fill Opacity of 100."
+                      end,
+                      rawTooltip=true,
+                      get=function()
+                          if Inheriting() then return ns.UF_TexBgOn(unitKey) end
+                          return settingsTable.textureBg == true
+                      end,
+                      set=function(v)
+                          settingsTable.textureBg = v and true or false
+                          ReloadAndUpdate()
+                      end },
+                },
+            })
+        end
 
         -- Boss Hover Borders: checkbox dropdown (Hover Border / Target Border,
         -- both default off) with inline color swatches. Enabling one recolors
